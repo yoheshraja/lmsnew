@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard | Settings</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/style.css">
+<style>
+.settings-msg{padding:12px 16px;border-radius:8px;font-weight:600;font-size:.9rem;margin-top:14px;display:none}
+.settings-msg.success{background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;display:block}
+.settings-msg.error{background:#ffebee;color:#c62828;border:1px solid #ffcdd2;display:block}
+.danger-zone{border:2px solid #dc3545!important}
+.danger-title{color:#dc3545!important}
+.credential-card{display:grid;gap:10px;padding:18px;border:1px solid #e9ecef;border-radius:12px;background:#fffaf6}
+.credential-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #f0e7de}
+.credential-row:last-child{border-bottom:none}
+.credential-row strong{color:#2b231c}
+@media(max-width:640px){.credential-row{align-items:flex-start;flex-direction:column;gap:4px}}
+</style>
+</head>
+<body>
+<div class="header"><div class="header-content"><div>Admin Dashboard</div>
+  <div class="admin-info"><div class="admin-avatar"><i class="fas fa-user-shield"></i></div>
+  <div class="admin-details"><div class="admin-name">Admin</div><div class="admin-role">Content Manager</div></div></div>
+</div></div>
+<div class="dashboard-container">
+  <div class="sidebar"><ul class="sidebar-menu">
+    <li><a href="/admin/upload" class="menu-item"><i class="fas fa-upload"></i><span>Upload Content</span></a></li>
+    <li><a href="/admin/content-library" class="menu-item"><i class="fas fa-folder-open"></i><span>Content Library</span></a></li>
+    <li><a href="/admin/analytics" class="menu-item"><i class="fas fa-chart-bar"></i><span>Analytics</span></a></li>
+    <li><a href="/admin/user-management" class="menu-item"><i class="fas fa-users"></i><span>User Management</span></a></li>
+    <li><a href="/admin/settings" class="menu-item active"><i class="fas fa-cog"></i><span>Settings</span></a></li>
+  </ul><button class="logout-btn btn btn-outline" onclick="logout()"><i class="fas fa-sign-out-alt"></i><span>Logout</span></button></div>
+  <div class="main-content">
+    <div class="form-container">
+      <div class="form-header"><div class="form-title"><i class="fas fa-user-lock" style="color:var(--primary);margin-right:6px"></i>Seeded Admin Credentials</div></div>
+      <div class="credential-card">
+        <div class="credential-row"><span>Email</span><strong id="seedAdminEmail">Loading...</strong></div>
+        <div class="credential-row"><span>Password</span><strong id="seedAdminPassword">Loading...</strong></div>
+      </div>
+      <div id="credMsg" class="settings-msg"></div>
+    </div>
+    <div class="form-container">
+      <div class="form-header"><div class="form-title"><i class="fas fa-globe" style="color:var(--primary);margin-right:6px"></i>Site Settings</div><button type="button" class="btn btn-primary" onclick="saveSiteSettings()"><i class="fas fa-save"></i> Save</button></div>
+      <div class="form-grid">
+        <div class="form-group"><label>Site Name</label><input id="siteName" type="text" value="Yogi Ramsuratkumar Ashramam"></div>
+        <div class="form-group"><label>Subtitle</label><input id="siteSub" type="text" value="Tiruvannamalai"></div>
+        <div class="form-group full-width"><label>Site Description</label><textarea id="siteDesc" rows="3">A spiritual learning platform for Yogi Ramsuratkumar's teachings.</textarea></div>
+        <div class="form-group"><label>Contact Email</label><input id="contactEmail" type="email" placeholder="admin@yogilms.local"></div>
+        <div class="form-group"><label>Timezone</label><select id="timezone"><option value="IST" selected>IST</option><option value="UTC">UTC</option><option value="EST">EST</option></select></div>
+      </div>
+      <div id="siteSettingsMsg" class="settings-msg"></div>
+    </div>
+    <div class="form-container">
+      <div class="form-header"><div class="form-title"><i class="fas fa-file-video" style="color:var(--primary);margin-right:6px"></i>Content Settings</div><button type="button" class="btn btn-primary" onclick="saveContentSettings()"><i class="fas fa-save"></i> Save</button></div>
+      <div class="form-grid">
+        <div class="form-group"><label>Max Image Size (MB)</label><input id="maxImg" type="number" value="5" min="1" max="50"></div>
+        <div class="form-group"><label>Max Video Size (MB)</label><input id="maxVid" type="number" value="500" min="10" max="2000"></div>
+        <div class="form-group"><label>Max Audio Size (MB)</label><input id="maxAud" type="number" value="50" min="1" max="500"></div>
+        <div class="form-group"><label>Allowed Image Formats</label><input id="imgFmt" type="text" value="jpg, png, gif, webp"></div>
+        <div class="form-group"><label>Allowed Video Formats</label><input id="vidFmt" type="text" value="mp4, mov, avi, mkv"></div>
+        <div class="form-group"><label>Allowed Audio Formats</label><input id="audFmt" type="text" value="mp3, wav, aac, ogg"></div>
+      </div>
+      <div id="contentSettingsMsg" class="settings-msg"></div>
+    </div>
+    <div class="form-container">
+      <div class="form-header"><div class="form-title"><i class="fas fa-key" style="color:var(--primary);margin-right:6px"></i>Change Password</div></div>
+      <div class="form-grid">
+        <div class="form-group"><label>Current Password</label><input id="oldPass" type="password" placeholder="Current password"></div>
+        <div class="form-group"><label>New Password</label><input id="newPass" type="password" placeholder="New password (min 6 chars)"></div>
+        <div class="form-group"><label>Confirm New Password</label><input id="confPass" type="password" placeholder="Confirm new password"></div>
+      </div>
+      <div class="action-buttons"><button type="button" class="btn btn-primary" onclick="changePassword()"><i class="fas fa-key"></i> Update Password</button></div>
+      <div id="passMsg" class="settings-msg"></div>
+    </div>
+    <div class="form-container danger-zone">
+      <div class="form-header"><div class="form-title danger-title"><i class="fas fa-exclamation-triangle"></i> Danger Zone</div></div>
+      <div class="form-grid">
+        <div class="form-group"><h4>Reset Navigation</h4><p class="gray-text margin-10" style="margin-top:8px;font-size:.88rem">Reset all navigation items from MongoDB defaults.</p><button type="button" class="btn btn-outline" style="border-color:#dc3545;color:#dc3545;margin-top:10px" onclick="resetNav()"><i class="fas fa-undo"></i> Reset Navigation</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="/config.js"></script>
+<script src="/config.local.js"></script>
+<script src="/static/js/auth.js"></script>
+<script src="/static/js/api.js"></script>
+<script src="/static/js/admin-common.js"></script>
+<script src="/static/js/admin-nav.js"></script>
+<script src="/script.js"></script>
+<script>
+(function(){
+"use strict";
+function showSettingsMsg(id,message,type){const element=document.getElementById(id);element.textContent=message;element.className="settings-msg "+type;clearTimeout(element._timeout);element._timeout=setTimeout(function(){element.className="settings-msg";},4000);}
+function saveSiteSettings(){localStorage.setItem("lms_site_settings",JSON.stringify({siteName:document.getElementById("siteName").value,siteSub:document.getElementById("siteSub").value,siteDesc:document.getElementById("siteDesc").value,contactEmail:document.getElementById("contactEmail").value,timezone:document.getElementById("timezone").value}));showSettingsMsg("siteSettingsMsg","Site settings saved.","success");}
+function saveContentSettings(){localStorage.setItem("lms_content_settings",JSON.stringify({maxImg:document.getElementById("maxImg").value,maxVid:document.getElementById("maxVid").value,maxAud:document.getElementById("maxAud").value,imgFmt:document.getElementById("imgFmt").value,vidFmt:document.getElementById("vidFmt").value,audFmt:document.getElementById("audFmt").value}));showSettingsMsg("contentSettingsMsg","Content settings saved.","success");}
+async function loadSeededCredentials(){
+  try{
+    const data=await window.LMS_API.requestJson("/public/site-config");
+    document.getElementById("seedAdminEmail").textContent=data.default_admin_email||"admin@yogilms.local";
+    document.getElementById("seedAdminPassword").textContent=data.default_admin_password||"Admin@123";
+  }catch(error){
+    document.getElementById("seedAdminEmail").textContent="admin@yogilms.local";
+    document.getElementById("seedAdminPassword").textContent="Admin@123";
+    showSettingsMsg("credMsg","Could not load backend seed settings. Showing fallback defaults.","error");
+  }
+}
+async function changePassword(){
+  const currentPassword=document.getElementById("oldPass").value;
+  const newPassword=document.getElementById("newPass").value;
+  const confirmPassword=document.getElementById("confPass").value;
+  if(!currentPassword||!newPassword||!confirmPassword){showSettingsMsg("passMsg","All fields are required.","error");return;}
+  if(newPassword.length<6){showSettingsMsg("passMsg","New password must be at least 6 characters.","error");return;}
+  if(newPassword!==confirmPassword){showSettingsMsg("passMsg","Passwords do not match.","error");return;}
+  try{
+    await window.LMS_API.requestJson("/change-password",window.LMS_API.jsonOptions("POST",{current_password:currentPassword,new_password:newPassword}));
+    document.getElementById("oldPass").value="";document.getElementById("newPass").value="";document.getElementById("confPass").value="";
+    showSettingsMsg("passMsg","Password updated.","success");
+  }catch(error){showSettingsMsg("passMsg",error.message||"Failed to update password.","error");}
+}
+async function resetNav(){if(!confirm("Reset navigation to backend defaults?")){return;}try{await window.LMS_ADMIN_NAV.resetNavItems();showSettingsMsg("siteSettingsMsg","Navigation reset to defaults.","success");}catch(error){showSettingsMsg("siteSettingsMsg",error.message||"Reset failed.","error");}}
+window.addEventListener("DOMContentLoaded",function(){
+  loadSeededCredentials();
+  try{const siteSettings=JSON.parse(localStorage.getItem("lms_site_settings")||"{}");if(siteSettings.siteName)document.getElementById("siteName").value=siteSettings.siteName;if(siteSettings.siteSub)document.getElementById("siteSub").value=siteSettings.siteSub;if(siteSettings.siteDesc)document.getElementById("siteDesc").value=siteSettings.siteDesc;if(siteSettings.contactEmail)document.getElementById("contactEmail").value=siteSettings.contactEmail;if(siteSettings.timezone)document.getElementById("timezone").value=siteSettings.timezone;}catch(error){}
+  try{const contentSettings=JSON.parse(localStorage.getItem("lms_content_settings")||"{}");if(contentSettings.maxImg)document.getElementById("maxImg").value=contentSettings.maxImg;if(contentSettings.maxVid)document.getElementById("maxVid").value=contentSettings.maxVid;if(contentSettings.maxAud)document.getElementById("maxAud").value=contentSettings.maxAud;if(contentSettings.imgFmt)document.getElementById("imgFmt").value=contentSettings.imgFmt;if(contentSettings.vidFmt)document.getElementById("vidFmt").value=contentSettings.vidFmt;if(contentSettings.audFmt)document.getElementById("audFmt").value=contentSettings.audFmt;}catch(error){}
+});
+window.saveSiteSettings=saveSiteSettings;
+window.saveContentSettings=saveContentSettings;
+window.changePassword=changePassword;
+window.resetNav=resetNav;
+})();
+</script>
+</body></html>

@@ -1,0 +1,27 @@
+/**
+ * API Configuration - DEVELOPMENT/LOCAL
+ * 
+ * This file overrides the default config.js settings for local development.
+ * Copy this file as config.local.js and customize for your setup.
+ * 
+ * Include in your HTML BEFORE api.js:
+ * <script src="config.js"></script>
+ * <script src="config.local.js"></script>  <!-- Optional, for local overrides -->
+ * <script src="api.js"></script>
+ */
+
+// Example configurations:
+
+// ===== OPTION 1: Backend on different port (same machine) =====
+// window.API_CONFIG.API_URL = "http://localhost:3000";
+
+// ===== OPTION 2: Backend on different machine =====
+// window.API_CONFIG.API_URL = "http://192.168.1.100:3000";
+
+// ===== OPTION 3: Backend on different host/domain =====
+// window.API_CONFIG.API_URL = "http://backend.local:3000";
+
+// ===== OPTION 4: Using same origin (default) =====
+// window.API_CONFIG.API_URL = window.location.origin;
+
+// Uncomment one of the above and modify as needed for your local setup

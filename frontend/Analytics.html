@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard | Analytics</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/style.css">
+<style>
+.analytics-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px;margin-bottom:22px}
+.metric-card{background:#fff;border-radius:12px;padding:22px;box-shadow:0 2px 10px rgba(0,0,0,.07);border-left:4px solid var(--primary)}
+.metric-card.green{border-left-color:#28a745}.metric-card.orange{border-left-color:#fd7e14}.metric-card.purple{border-left-color:#6f42c1}.metric-card.red{border-left-color:#dc3545}
+.metric-val{font-size:2rem;font-weight:700;color:#2c3e50;margin:6px 0}
+.metric-label{font-size:.82rem;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.metric-sub{font-size:.78rem;color:#aaa;margin-top:4px}
+.nav-stat-row{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:12px;padding:10px 14px;background:#f8f9fa;border-radius:8px;margin-bottom:6px}
+.nav-stat-bar-wrap{height:6px;background:#eee;border-radius:4px;margin-top:4px;width:100%}
+.nav-stat-bar{height:6px;background:var(--primary);border-radius:4px;transition:width .5s}
+.topic-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.78rem;font-weight:600;background:var(--primary-light);color:var(--primary);margin:2px}
+</style>
+</head>
+<body>
+<div class="header"><div class="header-content"><div>Admin Dashboard</div>
+  <div class="admin-info"><div class="admin-avatar"><i class="fas fa-user-shield"></i></div>
+  <div class="admin-details"><div class="admin-name" id="adminName">Admin</div><div class="admin-role">Content Manager</div></div></div>
+</div></div>
+<div class="dashboard-container">
+  <div class="sidebar"><ul class="sidebar-menu">
+    <li><a href="/admin/upload" class="menu-item"><i class="fas fa-upload"></i><span>Upload Content</span></a></li>
+    <li><a href="/admin/content-library" class="menu-item"><i class="fas fa-folder-open"></i><span>Content Library</span></a></li>
+    <li><a href="/admin/analytics" class="menu-item active"><i class="fas fa-chart-bar"></i><span>Analytics</span></a></li>
+    <li><a href="/admin/user-management" class="menu-item"><i class="fas fa-users"></i><span>User Management</span></a></li>
+    <li><a href="/admin/settings" class="menu-item"><i class="fas fa-cog"></i><span>Settings</span></a></li>
+  </ul><button class="logout-btn btn btn-outline" onclick="logout()"><i class="fas fa-sign-out-alt"></i><span>Logout</span></button></div>
+  <div class="main-content">
+    <div class="form-container">
+      <div class="form-header"><div class="form-title"><i class="fas fa-chart-bar" style="color:var(--primary);margin-right:6px"></i>Content Analytics</div>
+        <button class="btn btn-outline" onclick="loadAnalytics()"><i class="fas fa-sync"></i> Refresh</button>
+      </div>
+      <div class="analytics-grid" id="metricsGrid">
+        <div class="metric-card"><div class="metric-label"><i class="fas fa-file"></i> Total Content</div><div class="metric-val" id="mTotal">—</div></div>
+        <div class="metric-card green"><div class="metric-label"><i class="fab fa-youtube"></i> YouTube Videos</div><div class="metric-val" id="mYt">—</div></div>
+        <div class="metric-card orange"><div class="metric-label"><i class="fas fa-image"></i> Media Files</div><div class="metric-val" id="mFiles">—</div></div>
+        <div class="metric-card purple"><div class="metric-label"><i class="fas fa-align-left"></i> Articles</div><div class="metric-val" id="mArt">—</div></div>
+        <div class="metric-card red"><div class="metric-label"><i class="fas fa-users"></i> Total Users</div><div class="metric-val" id="mUsers">—</div></div>
+        <div class="metric-card"><div class="metric-label"><i class="fas fa-sitemap"></i> Nav Pages</div><div class="metric-val" id="mNavs">—</div></div>
+      </div>
+    </div>
+    <div class="form-container">
+      <div class="form-header"><div class="form-title">Content by Navigation Page</div></div>
+      <div id="navStats"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-container">
+        <div class="form-header"><div class="form-title">Content by Topic</div></div>
+        <div id="topicStats" style="padding:10px 0"></div>
+      </div>
+      <div class="form-container">
+        <div class="form-header"><div class="form-title">Content by Type</div></div>
+        <div id="typeStats" style="padding:10px 0"></div>
+      </div>
+    </div>
+    <div class="form-container">
+      <div class="form-header"><div class="form-title">Recent Uploads (Last 10)</div></div>
+      <table class="data-table" id="recentTable">
+        <thead><tr><th>Title</th><th>Topic</th><th>Type</th><th>Nav Page</th><th>Date</th></tr></thead>
+        <tbody id="recentTbody"><tr><td colspan="5" style="text-align:center;padding:20px;color:#999">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<script src="/config.js"></script>
+<script src="/config.local.js"></script>
+<script src="/static/js/auth.js"></script>
+<script src="/static/js/api.js"></script>
+<script src="/static/js/admin-common.js"></script>
+<script src="/static/js/admin-nav.js"></script>
+<script src="/script.js"></script>
+<script>
+(function(){
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+async function loadAnalytics(){
+  let contents=[],users=[],navItems=[];
+  try{contents=await window.LMS_API.requestJson('/get-contents',{headers:window.LMS_API.authHeaders()});}catch(e){}
+  try{users=await window.LMS_API.requestJson('/get-users',{headers:window.LMS_API.authHeaders()});}catch(e){}
+  try{navItems=await window.LMS_ADMIN_NAV.fetchNavItems();}catch(e){}
+  const all=contents.slice();
+  document.getElementById('mTotal').textContent=all.length;
+  document.getElementById('mYt').textContent=all.filter(i=>i.youtube_id||i.content_type==='youtube').length;
+  document.getElementById('mFiles').textContent=all.filter(i=>i.image_url||i.audio_url||i.video_url).length;
+  document.getElementById('mArt').textContent=all.filter(i=>i.content_type==='article'||i.article_body).length;
+  document.getElementById('mUsers').textContent=users.length;
+  document.getElementById('mNavs').textContent=navItems.length;
+  // By nav page
+  const navDiv=document.getElementById('navStats');navDiv.innerHTML='';
+  const navCount={};all.forEach(i=>{const p=i.nav_page||'unknown';navCount[p]=(navCount[p]||0)+1;});
+  const maxNav=Math.max(...Object.values(navCount),1);
+  Object.entries(navCount).sort((a,b)=>b[1]-a[1]).forEach(([pg,cnt])=>{
+    const ni=navItems.find(n=>n.page===pg);const lbl=ni?(ni.icon+' '+ni.name):pg;
+    const pct=Math.round(cnt/maxNav*100);
+    navDiv.innerHTML+='<div class="nav-stat-row"><div><strong>'+esc(lbl)+'</strong><div class="nav-stat-bar-wrap"><div class="nav-stat-bar" style="width:'+pct+'%"></div></div></div><span style="font-size:.82rem;color:#888">'+cnt+' item'+(cnt>1?'s':'')+'</span><a href="/'+pg+'.html" target="_blank" class="btn btn-outline" style="font-size:.75rem;padding:4px 9px">View</a></div>';
+  });
+  if(!Object.keys(navCount).length)navDiv.innerHTML='<p style="color:#aaa;padding:14px">No content uploaded yet.</p>';
+  // By topic
+  const topicDiv=document.getElementById('topicStats');topicDiv.innerHTML='';
+  const topicCount={};all.forEach(i=>{const t=i.topic||'other';topicCount[t]=(topicCount[t]||0)+1;});
+  if(Object.keys(topicCount).length){topicDiv.innerHTML='<div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 0">';
+    Object.entries(topicCount).sort((a,b)=>b[1]-a[1]).forEach(([t,c])=>{topicDiv.innerHTML+='<span class="topic-badge">'+esc(t)+' ('+c+')</span>';});
+    topicDiv.innerHTML+='</div>';}
+  else topicDiv.innerHTML='<p style="color:#aaa;padding:14px">No topics yet.</p>';
+  // By type
+  const typeDiv=document.getElementById('typeStats');
+  const yt=all.filter(i=>i.youtube_id||i.content_type==='youtube').length;
+  const art=all.filter(i=>i.content_type==='article'||i.article_body).length;
+  const files=all.filter(i=>i.image_url||i.audio_url||i.video_url).length;
+  typeDiv.innerHTML='<div style="display:flex;flex-direction:column;gap:10px;padding:8px 0">'
+    +'<div style="display:flex;align-items:center;gap:10px"><span style="width:80px;font-size:.82rem;color:#888">YouTube</span><div style="flex:1;height:10px;background:#eee;border-radius:5px"><div style="width:'+Math.round(yt/Math.max(all.length,1)*100)+'%;height:10px;background:#c62828;border-radius:5px"></div></div><span style="font-size:.82rem;color:#666">'+yt+'</span></div>'
+    +'<div style="display:flex;align-items:center;gap:10px"><span style="width:80px;font-size:.82rem;color:#888">Files</span><div style="flex:1;height:10px;background:#eee;border-radius:5px"><div style="width:'+Math.round(files/Math.max(all.length,1)*100)+'%;height:10px;background:var(--primary);border-radius:5px"></div></div><span style="font-size:.82rem;color:#666">'+files+'</span></div>'
+    +'<div style="display:flex;align-items:center;gap:10px"><span style="width:80px;font-size:.82rem;color:#888">Articles</span><div style="flex:1;height:10px;background:#eee;border-radius:5px"><div style="width:'+Math.round(art/Math.max(all.length,1)*100)+'%;height:10px;background:#2e7d32;border-radius:5px"></div></div><span style="font-size:.82rem;color:#666">'+art+'</span></div>'
+    +'</div>';
+  // Recent
+  const tbody=document.getElementById('recentTbody');tbody.innerHTML='';
+  all.slice(0,10).forEach(item=>{
+    const ni=navItems.find(n=>n.page===item.nav_page);const nl=ni?(ni.icon+' '+ni.name):(item.nav_page||'—');
+    const date=item.created_at?new Date(item.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'—';
+    const isYt=item.youtube_id||item.content_type==='youtube';const isArt=item.content_type==='article'||item.article_body;
+    const type=isYt?'<span style="color:#c62828;font-size:.78rem"><i class="fab fa-youtube"></i> YouTube</span>':isArt?'<span style="color:#2e7d32;font-size:.78rem"><i class="fas fa-align-left"></i> Article</span>':'<span style="color:#1565c0;font-size:.78rem"><i class="fas fa-file"></i> Files</span>';
+    tbody.innerHTML+='<tr><td class="content-title">'+esc(item.title)+'</td><td>'+esc(item.topic||'')+'</td><td>'+type+'</td><td><span class="nav-tag">'+esc(nl)+'</span></td><td style="font-size:.8rem">'+date+'</td></tr>';
+  });
+  if(!all.length)tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:20px;color:#aaa">No content yet.</td></tr>';
+}
+window.addEventListener('DOMContentLoaded',loadAnalytics);
+window.loadAnalytics=loadAnalytics;
+
+})();
+</script>
+</body></html>

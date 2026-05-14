@@ -1,0 +1,27 @@
+# Environment variables (SECRETS - never commit!)
+.env
+backend/.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+backend/.venv/
+backend/__pycache__/
+
+# Uploaded files (stored in DB/cloud, not git)
+backend/static/uploads/
+
+# Large media files
+*.mp4
+*.mpeg
+*.mp3
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

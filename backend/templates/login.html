@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unified Login | Yogi LMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+Thambi+2:wght@400;600;700;800&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/login.css">
+</head>
+<body class="login-page">
+  <main class="login-stage">
+    <div class="login-door left-door">
+      <img src="/yogi.img.png" alt="Left door image">
+      <div class="login-door__overlay">
+        <p>Yogi Ramsuratkumar</p>
+      </div>
+    </div>
+
+    <section class="login-card-shell">
+      <div class="login-card">
+        <p class="login-card__eyebrow">Login</p>
+
+        <form id="loginForm" class="login-form" novalidate>
+          <label class="field">
+            <span>Email</span>
+            <input id="email" type="email" placeholder="user@example.com" autocomplete="email" required>
+          </label>
+
+          <label class="field field--password">
+            <span>Password</span>
+            <input id="password" type="password" placeholder="Enter your password" autocomplete="current-password" required>
+            <button type="button" class="password-toggle" id="passwordToggle" aria-label="Toggle password visibility">Show</button>
+          </label>
+
+          <label class="remember-row">
+            <input id="rememberEmail" type="checkbox">
+            <span>Remember email on this device</span>
+          </label>
+
+          <button type="submit" class="login-submit" id="submitButton">
+            <span id="submitText">Login</span>
+          </button>
+
+          <p id="loginMessage" class="login-message" role="status" aria-live="polite"></p>
+        </form>
+
+        <div class="login-seed-card">
+          <p class="login-seed-card__label">Seeded Admin Access</p>
+          <div class="login-seed-card__row">
+            <span>Email</span>
+            <strong>{{ default_admin_email }}</strong>
+          </div>
+          <div class="login-seed-card__row">
+            <span>Password</span>
+            <strong>{{ default_admin_password }}</strong>
+          </div>
+        </div>
+
+        <a href="/home" class="login-back-link">Continue without logging in</a>
+      </div>
+    </section>
+
+    <div class="login-door right-door">
+      <img src="/yogi1.img.jpg" alt="Right door image">
+      <div class="login-door__overlay">
+        <p>Learning Hub</p>
+      </div>
+    </div>
+  </main>
+
+  <script src="/static/js/auth.js"></script>
+  <script src="/static/js/login.js"></script>
+</body>
+</html>

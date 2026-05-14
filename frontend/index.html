@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Overview</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="header">
+    <div class="header-content">
+        <div>Admin Dashboard</div>
+        <div class="admin-info">
+            <div class="admin-avatar">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="M10 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm5 1H5a5 5 0 0 0-5 5v1h20v-1a5 5 0 0 0-5-5z"/>
+                </svg>
+            </div>
+            <div class="admin-details">
+                <div class="admin-name">Admin</div>
+                <div class="admin-role">Content Manager</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-container">
+    <div class="sidebar">
+        <ul class="sidebar-menu">
+            <li><a href="/admin/upload" class="menu-item"><span>Upload Content</span></a></li>
+            <li><a href="/admin/content-library" class="menu-item"><span>Content Library</span></a></li>
+            <li><a href="/admin/analytics" class="menu-item"><span>Analytics</span></a></li>
+            <li><a href="/admin/user-management" class="menu-item"><span>User Management</span></a></li>
+            <li><a href="/admin/settings" class="menu-item"><span>Settings</span></a></li>
+        </ul>
+        <button class="logout btn btn-outline logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="main-content">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon primary">Files</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="totalContent">0</div>
+                    <div class="stat-label">Total Content</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon success">Users</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="totalUsers">0</div>
+                    <div class="stat-label">Total Users</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon warning">Views</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="viewsToday">0</div>
+                    <div class="stat-label">Views Today</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon danger">Week</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="uploadsThisWeek">0</div>
+                    <div class="stat-label">Uploads This Week</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-container">
+            <div class="form-header">
+                <div class="form-title">Recent Content</div>
+                <a href="/admin/content-library" class="btn btn-outline">View All</a>
+            </div>
+            <div id="recentContent" class="recent-content-grid"></div>
+            <div id="noRecentContent" class="no-content hidden-element">
+                <p>No recent content found. <a href="/admin/upload">Add content</a></p>
+            </div>
+        </div>
+
+        <div class="form-container">
+            <div class="form-header">
+                <div class="form-title">Quick Actions</div>
+            </div>
+            <div class="action-buttons">
+                <a href="/admin/upload" class="btn btn-primary">Upload New</a>
+                <a href="/admin/user-management" class="btn btn-outline">Add User</a>
+                <a href="/admin/analytics" class="btn btn-outline">View Analytics</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/config.js"></script>
+<script src="/config.local.js"></script>
+<script src="/static/js/auth.js"></script>
+<script src="/static/js/api.js"></script>
+<script src="/static/js/admin-common.js"></script>
+<script src="/script.js"></script>
+<script>
+async function loadDashboard() {
+    try {
+        const analyticsData = await window.LMS_API.requestJson("/analytics/overview", {
+            headers: window.LMS_API.authHeaders({ "Content-Type": "application/json" })
+        });
+        updateStats(analyticsData);
+
+        const contents = await window.LMS_API.requestJson("/get-contents", {
+            headers: window.LMS_API.authHeaders({ "Content-Type": "application/json" })
+        });
+        displayRecent(contents);
+    } catch (err) {
+        console.error("[DASHBOARD] Error loading:", err);
+    }
+}
+
+function updateStats(s) {
+    document.getElementById("totalContent").textContent = s.total_content || 0;
+    document.getElementById("totalUsers").textContent = s.total_users || 0;
+    document.getElementById("viewsToday").textContent = s.views_today || 0;
+    document.getElementById("uploadsThisWeek").textContent = s.uploads_this_week || 0;
+}
+
+function recentPreview(content) {
+    if (content.image_url) {
+        return `<img src="${content.image_url}" alt="${content.title}" style="width:100%;height:160px;object-fit:cover;display:block;border-bottom:1px solid #eee">`;
+    }
+    if (content.video_url) {
+        return `<div style="height:160px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#17324f,#0a6ad8);color:#fff;font-weight:700;border-bottom:1px solid #eee">Video</div>`;
+    }
+    if (content.youtube_id) {
+        return `<img src="https://img.youtube.com/vi/${content.youtube_id}/mqdefault.jpg" alt="${content.title}" style="width:100%;height:160px;object-fit:cover;display:block;border-bottom:1px solid #eee">`;
+    }
+    if (content.audio_url) {
+        return `<div style="height:160px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#9c5c24,#6a1b9a);color:#fff;font-weight:700;border-bottom:1px solid #eee">Audio</div>`;
+    }
+    return `<div style="height:160px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f5f7fa,#dfe7ec);color:#0a6ad8;font-weight:700;border-bottom:1px solid #eee">Content</div>`;
+}
+
+function displayRecent(contents) {
+    const grid = document.getElementById("recentContent");
+    const empty = document.getElementById("noRecentContent");
+
+    if (!contents || contents.length === 0) {
+        grid.style.display = "none";
+        empty.classList.remove("hidden-element");
+        return;
+    }
+
+    empty.classList.add("hidden-element");
+    grid.innerHTML = "";
+
+    contents.slice(0, 4).forEach(c => {
+        const card = document.createElement("div");
+        card.className = "content-card";
+
+        const date = new Date(c.created_at).toLocaleDateString();
+        const types = [
+            c.image_url && "Image",
+            c.audio_url && "Audio",
+            c.video_url && "Video",
+            c.youtube_id && "YouTube",
+            c.article_body && "Article"
+        ].filter(Boolean).join(", ");
+
+        card.innerHTML = `
+            ${recentPreview(c)}
+            <div class="content-card-header">
+                <h4>${c.title}</h4>
+                <span class="content-topic">${c.topic}</span>
+            </div>
+            <div class="content-card-body">
+                <p>${c.description ? c.description.slice(0, 100) + "..." : "No description"}</p>
+                <div class="content-meta">
+                    <span>${types || "No files"}</span>
+                    <span>${date}</span>
+                </div>
+                <div class="content-meta" style="margin-top:8px">
+                    <span>${(c.nav_page || "home-final") + ".html"}</span>
+                </div>
+            </div>
+            <div class="content-card-actions">
+                <button class="btn btn-sm btn-outline" data-action="view">View</button>
+                <button class="btn btn-sm btn-primary" data-action="edit">Edit</button>
+            </div>`;
+
+        grid.appendChild(card);
+        card.querySelector('[data-action="view"]').addEventListener("click", () => viewContent(String(c.id)));
+        card.querySelector('[data-action="edit"]').addEventListener("click", () => editContent(String(c.id)));
+    });
+}
+
+function viewContent(id) {
+    window.location.href = `/admin/content-library#view-${id}`;
+}
+
+function editContent(id) {
+    window.location.href = `/admin/content-library#edit-${id}`;
+}
+
+window.addEventListener("load", () => {
+    setTimeout(() => {
+        if (window.location.pathname === "/admin" && window.LMS_AUTH.getSession()) {
+            loadDashboard();
+        }
+    }, 100);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+Thambi+2:wght@400;600;700;800&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/static/css/navbar.css">
+  <link rel="stylesheet" href="/static/css/public-page.css">
+</head>
+<body
+  data-page-key="{{ page_key }}"
+  data-dynamic-title="{{ 'true' if dynamic_title else 'false' }}"
+>
+  <div class="lightbox" id="lightbox">
+    <button class="lightbox-close" id="lbClose" aria-label="Close media preview">
+      <i class="fas fa-times"></i>
+    </button>
+    <div class="lightbox-content" id="lbContent"></div>
+    <div class="lightbox-title" id="lbTitle"></div>
+  </div>
+
+  {% include "components/navbar.html" %}
+
+  <main class="page-shell">
+    <section class="hero-panel">
+      <div class="hero-panel__inner">
+        <p class="hero-panel__eyebrow">Learning Hub</p>
+        <h1 id="dynamicPageTitle">{{ hero_title }}</h1>
+        <p id="dynamicPageSub">{{ hero_subtitle }}</p>
+      </div>
+    </section>
+
+    {% if show_search %}
+    <section class="search-strip">
+      <div class="search-box">
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Search topics, titles, or descriptions"
+          aria-label="Search content"
+          oninput="filterContent()"
+        >
+        <button type="button" onclick="filterContent()" aria-label="Search content">
+          <i class="fas fa-search"></i>
+        </button>
+      </div>
+    </section>
+    {% endif %}
+
+    <section class="content-shell">
+      <div id="contentList" class="content-list">
+        <div class="state-box">
+          <i class="fas fa-circle-notch fa-spin"></i>
+          <h3>Loading content...</h3>
+          <p>Please wait while we fetch the latest materials.</p>
+        </div>
+      </div>
+
+      <div id="noResults" class="hidden-element">
+        <div class="state-box">
+          <i class="fas fa-inbox"></i>
+          <h3>No content available yet</h3>
+          <p>This section will appear here once content is uploaded.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/js/auth.js"></script>
+  <script src="/nav.js"></script>
+  <script src="/content-page.js"></script>
+</body>
+</html>

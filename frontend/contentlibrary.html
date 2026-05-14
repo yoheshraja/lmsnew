@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard | Content Library</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/style.css">
+<style>
+.modal.hidden-element{display:none!important}
+.filter-pills{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.pill{padding:5px 14px;border-radius:20px;border:2px solid #e0e0e0;background:#fafafa;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s;color:#555}
+.pill:hover,.pill.active{border-color:var(--primary);background:var(--primary-light);color:var(--primary)}
+.type-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;font-size:.7rem;font-weight:700}
+.type-badge.youtube{background:#ffe6e6;color:#c62828}
+.type-badge.files{background:#e3f2fd;color:#1565c0}
+.type-badge.article{background:#e8f5e9;color:#2e7d32}
+.nav-tag{background:#f0f4ff;color:#3d5afe;padding:2px 7px;border-radius:4px;font-size:.7rem;font-weight:700}
+.status-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;font-size:.72rem;font-weight:700}
+.status-pill.published{background:#e8f5e9;color:#2e7d32}
+.status-pill.draft{background:#fff3e0;color:#e65100}
+.status-pill.scheduled{background:#e3f2fd;color:#1565c0}
+.modal-msg{padding:10px 14px;border-radius:6px;font-size:.88rem;font-weight:600;margin-top:10px;display:none}
+.modal-msg.error{background:#ffebee;color:#c62828;border:1px solid #ffcdd2;display:block}
+.modal-msg.success{background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;display:block}
+</style>
+</head>
+<body>
+<div class="header"><div class="header-content"><div>Admin Dashboard</div>
+  <div class="admin-info"><div class="admin-avatar"><i class="fas fa-user-shield"></i></div>
+  <div class="admin-details"><div class="admin-name">Admin</div><div class="admin-role">Content Manager</div></div></div>
+</div></div>
+<div class="dashboard-container">
+  <div class="sidebar"><ul class="sidebar-menu">
+    <li><a href="/admin/upload" class="menu-item"><i class="fas fa-upload"></i><span>Upload Content</span></a></li>
+    <li><a href="/admin/content-library" class="menu-item active"><i class="fas fa-folder-open"></i><span>Content Library</span></a></li>
+    <li><a href="/admin/analytics" class="menu-item"><i class="fas fa-chart-bar"></i><span>Analytics</span></a></li>
+    <li><a href="/admin/user-management" class="menu-item"><i class="fas fa-users"></i><span>User Management</span></a></li>
+    <li><a href="/admin/settings" class="menu-item"><i class="fas fa-cog"></i><span>Settings</span></a></li>
+  </ul><button class="logout-btn btn btn-outline" onclick="logout()"><i class="fas fa-sign-out-alt"></i><span>Logout</span></button></div>
+  <div class="main-content">
+    <div class="form-container">
+      <div class="form-header">
+        <div class="form-title">Content Library</div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <input type="text" id="searchInput" placeholder="Search..." oninput="applyFilters()" style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:.88rem;width:220px">
+          <a href="/admin/upload" class="btn btn-primary"><i class="fas fa-plus"></i> Add New</a>
+        </div>
+      </div>
+      <div id="filterPills" class="filter-pills">
+        <button class="pill active" data-page="all" onclick="setFilter('all',this)">All</button>
+      </div>
+    </div>
+    <div class="stats-container" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))">
+      <div class="stat-card"><div class="stat-icon blue"><i class="fas fa-file"></i></div><div><div class="stat-value" id="sTotal">0</div><div class="stat-label">Total Items</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#ffe6e6;color:#c62828"><i class="fab fa-youtube"></i></div><div><div class="stat-value" id="sYt">0</div><div class="stat-label">YouTube</div></div></div>
+      <div class="stat-card"><div class="stat-icon green"><i class="fas fa-image"></i></div><div><div class="stat-value" id="sFiles">0</div><div class="stat-label">Media Files</div></div></div>
+      <div class="stat-card"><div class="stat-icon orange"><i class="fas fa-align-left"></i></div><div><div class="stat-value" id="sArt">0</div><div class="stat-label">Articles</div></div></div>
+    </div>
+    <div class="data-table-container">
+      <table class="data-table">
+        <thead><tr><th>#</th><th>Title</th><th>Topic</th><th>Status</th><th>Navigation Page</th><th>Media</th><th>Date</th><th>Actions</th></tr></thead>
+        <tbody id="contentTbody"><tr><td colspan="8" style="text-align:center;padding:30px;color:#999"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr></tbody>
+      </table>
+    </div>
+    <div id="emptyState" class="hidden-element" style="text-align:center;padding:50px;color:#aaa">
+      <i class="fas fa-inbox fa-3x" style="margin-bottom:14px;color:#ddd;display:block"></i>
+      <h3>No content found</h3><p>Upload your first item.</p>
+      <a href="/admin/upload" class="btn btn-primary" style="margin-top:14px"><i class="fas fa-upload"></i> Upload</a>
+    </div>
+  </div>
+</div>
+
+<div id="editModal" class="modal hidden-element">
+  <div class="modal-content" style="max-width:760px">
+    <div class="modal-header"><h3><i class="fas fa-edit"></i> Edit Content</h3>
+      <span onclick="closeModal()" style="cursor:pointer;font-size:1.5rem;line-height:1;color:#999;padding:4px">&times;</span></div>
+    <div class="modal-body">
+      <input type="hidden" id="editId">
+      <div class="form-grid">
+        <div class="form-group"><label>Title *</label><input id="editTitle" type="text"></div>
+        <div class="form-group"><label>Topic *</label>
+          <select id="editTopic"><option value="">Select</option><option value="biography">Biography</option><option value="teachings">Teachings</option><option value="prayers">Prayers</option><option value="events">Events</option><option value="library">Library</option><option value="gallery">Gallery</option><option value="other">Other</option></select>
+        </div>
+        <div class="form-group"><label>Author / Publisher</label><input id="editAuthorName" type="text"></div>
+        <div class="form-group"><label>Speaker / Artist</label><input id="editSpeakerName" type="text"></div>
+        <div class="form-group"><label>Location</label><input id="editLocationName" type="text"></div>
+        <div class="form-group"><label>Event Date</label><input id="editEventDate" type="date"></div>
+        <div class="form-group"><label>Duration</label><input id="editDurationText" type="text"></div>
+        <div class="form-group"><label>Tags</label><input id="editTags" type="text" placeholder="comma, separated, tags"></div>
+        <div class="form-group"><label>Source</label><input id="editSourceLabel" type="text"></div>
+        <div class="form-group"><label>External Link</label><input id="editExternalLink" type="url"></div>
+        <div class="form-group"><label>Publish Status</label><select id="editPublishStatus"><option value="published">Published</option><option value="draft">Draft</option><option value="scheduled">Scheduled</option></select></div>
+        <div class="form-group" style="display:flex;align-items:end"><label style="display:flex;align-items:center;gap:8px;margin:0"><input id="editFeatured" type="checkbox" style="width:auto"> Featured</label></div>
+        <div class="form-group full-width"><label>Description</label><textarea id="editDesc" rows="3"></textarea></div>
+        <div class="form-group full-width"><label>Full Details</label><textarea id="editDetailBody" rows="6"></textarea></div>
+        <div class="form-group full-width"><label>Navigation Page</label><select id="editNavPage"></select></div>
+        <div class="form-group full-width" id="editYtRow" style="display:none"><label>YouTube URL / ID</label><input id="editYtUrl" type="text"></div>
+        <div class="form-group full-width" id="editArtRow" style="display:none"><label>Article Body</label><textarea id="editArtBody" rows="8"></textarea></div>
+      </div>
+      <div id="editMsg" class="modal-msg"></div>
+      <div class="action-buttons" style="margin-top:16px">
+        <button type="button" class="btn btn-primary" onclick="saveEdit()"><i class="fas fa-save"></i> Save</button>
+        <button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/config.js"></script>
+<script src="/config.local.js"></script>
+<script src="/static/js/auth.js"></script>
+<script src="/static/js/api.js"></script>
+<script src="/static/js/admin-common.js"></script>
+<script src="/static/js/admin-nav.js"></script>
+<script src="/script.js"></script>
+<script>
+(function(){
+"use strict";
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function extractYTId(url){const value=String(url||"").trim();const patterns=[/[?&]v=([a-zA-Z0-9_-]{11})/,/youtu\.be\/([a-zA-Z0-9_-]{11})/,/embed\/([a-zA-Z0-9_-]{11})/,/shorts\/([a-zA-Z0-9_-]{11})/,/^([a-zA-Z0-9_-]{11})$/];for(const pattern of patterns){const match=value.match(pattern);if(match){return match[1];}}return "";}
+let allContent=[],currentFilter="all",navItems=[];
+
+async function loadAll(){
+  try{allContent=await window.LMS_API.requestJson("/get-contents",{headers:window.LMS_API.authHeaders()});}catch(e){allContent=[];}
+  try{navItems=await window.LMS_ADMIN_NAV.fetchNavItems(true);}catch(e){navItems=[];}
+  buildFilterPills();
+  updateStats();
+  applyFilters();
+}
+
+function buildFilterPills(){
+  const bar=document.getElementById("filterPills");
+  bar.querySelectorAll("[data-page]:not([data-page='all'])").forEach(function(pill){pill.remove();});
+  [...new Set(allContent.map(item=>item.nav_page).filter(Boolean))].forEach(function(pageKey){
+    const navItem=window.LMS_ADMIN_NAV.findByPage(navItems,pageKey);
+    const label=navItem ? navItem.icon+" "+navItem.name : pageKey;
+    const pill=document.createElement("button");
+    pill.className="pill";
+    pill.dataset.page=pageKey;
+    pill.textContent=label;
+    pill.addEventListener("click",function(){setFilter(pageKey,pill);});
+    bar.appendChild(pill);
+  });
+}
+
+function setFilter(page,button){
+  currentFilter=page;
+  document.querySelectorAll(".filter-pills .pill").forEach(function(pill){pill.classList.remove("active");});
+  button.classList.add("active");
+  applyFilters();
+}
+
+function applyFilters(){
+  const query=(document.getElementById("searchInput").value||"").toLowerCase();
+  let items=allContent.slice();
+  if(currentFilter!=="all"){items=items.filter(item=>item.nav_page===currentFilter);}
+  if(query){items=items.filter(item=>(item.title||"").toLowerCase().includes(query)||(item.topic||"").toLowerCase().includes(query)||(item.description||"").toLowerCase().includes(query)||(item.article_body||"").toLowerCase().includes(query)||(item.detail_body||"").toLowerCase().includes(query)||(item.author_name||"").toLowerCase().includes(query)||(item.tags||[]).join(" ").toLowerCase().includes(query));}
+  renderTable(items);
+}
+
+function updateStats(){
+  document.getElementById("sTotal").textContent=allContent.length;
+  document.getElementById("sYt").textContent=allContent.filter(item=>item.youtube_id||item.content_type==="youtube").length;
+  document.getElementById("sFiles").textContent=allContent.filter(item=>item.image_url||item.audio_url||item.video_url).length;
+  document.getElementById("sArt").textContent=allContent.filter(item=>item.content_type==="article"||item.article_body).length;
+}
+
+function renderTable(items){
+  const tbody=document.getElementById("contentTbody");
+  const empty=document.getElementById("emptyState");
+  if(!items.length){
+    tbody.innerHTML="";
+    empty.classList.remove("hidden-element");
+    return;
+  }
+
+  empty.classList.add("hidden-element");
+  tbody.innerHTML="";
+  items.forEach(function(item,index){
+    const navItem=window.LMS_ADMIN_NAV.findByPage(navItems,item.nav_page);
+    const navLabel=navItem ? navItem.icon+" "+navItem.name : (item.nav_page||"-");
+    const isYoutube=item.youtube_id||item.content_type==="youtube";
+    const isArticle=item.content_type==="article"||item.article_body;
+    const date=item.created_at?new Date(item.created_at).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}):"-";
+    const media=isYoutube&&item.youtube_id
+      ? '<a href="https://youtube.com/watch?v='+item.youtube_id+'" target="_blank" rel="noreferrer" style="color:#c62828;font-size:.8rem"><i class="fab fa-youtube"></i> Watch</a>'
+      : [item.image_url&&'<a href="'+item.image_url+'" target="_blank" rel="noreferrer" title="Open image"><i class="fas fa-image" style="color:#1565c0"></i></a>',item.audio_url&&'<a href="'+item.audio_url+'" target="_blank" rel="noreferrer" title="Open audio"><i class="fas fa-music" style="color:#6a1b9a"></i></a>',item.video_url&&'<a href="'+item.video_url+'" target="_blank" rel="noreferrer" title="Open video"><i class="fas fa-video" style="color:#00695c"></i></a>'].filter(Boolean).join(" ")||"-";
+    const status=(item.publish_status||"published").toLowerCase();
+    const statusBadge='<span class="status-pill '+esc(status)+'">'+esc(status)+'</span>';
+    const typeBadge=isYoutube?'<span class="type-badge youtube"><i class="fab fa-youtube"></i> YouTube</span>':isArticle?'<span class="type-badge article"><i class="fas fa-align-left"></i> Article</span>':'<span class="type-badge files"><i class="fas fa-file"></i> Files</span>';
+    const tr=document.createElement("tr");
+    tr.innerHTML='<td style="color:#aaa;font-size:.8rem">'+(index+1)+'</td><td><span class="content-title">'+esc(item.title)+(item.featured?' <i class="fas fa-star" style="color:#f5b301"></i>':'')+'</span><div class="role-subtext">'+typeBadge+'</div></td><td><span class="content-topic">'+esc(item.topic||"")+'</span></td><td>'+statusBadge+'</td><td><span class="nav-tag">'+esc(navLabel)+'</span></td><td>'+media+'</td><td style="font-size:.8rem">'+date+'</td><td><div class="content-actions"><button class="action-btn" title="Edit" data-action="edit"><i class="fas fa-edit"></i></button><button class="action-btn" title="Delete" data-action="delete"><i class="fas fa-trash"></i></button></div></td>';
+    tr.querySelector("[data-action='edit']").addEventListener("click",function(){openEdit(item);});
+    tr.querySelector("[data-action='delete']").addEventListener("click",function(){deleteItem(String(item.id));});
+    tbody.appendChild(tr);
+  });
+}
+
+function openEdit(item){
+  document.getElementById("editId").value=item.id;
+  document.getElementById("editTitle").value=item.title||"";
+  document.getElementById("editTopic").value=item.topic||"";
+  document.getElementById("editDesc").value=item.description||"";
+  document.getElementById("editDetailBody").value=item.detail_body||"";
+  document.getElementById("editAuthorName").value=item.author_name||"";
+  document.getElementById("editSpeakerName").value=item.speaker_name||"";
+  document.getElementById("editLocationName").value=item.location_name||"";
+  document.getElementById("editEventDate").value=item.event_date||"";
+  document.getElementById("editDurationText").value=item.duration_text||"";
+  document.getElementById("editTags").value=(item.tags||[]).join(", ");
+  document.getElementById("editSourceLabel").value=item.source_label||"";
+  document.getElementById("editExternalLink").value=item.external_link||"";
+  document.getElementById("editPublishStatus").value=item.publish_status||"published";
+  document.getElementById("editFeatured").checked=Boolean(item.featured);
+  const select=document.getElementById("editNavPage");
+  select.innerHTML="";
+  navItems.forEach(function(navItem){
+    const option=document.createElement("option");
+    option.value=navItem.page;
+    option.textContent=navItem.icon+" "+navItem.name;
+    if(window.LMS_ADMIN_NAV.normalizePageKey(item.nav_page)===navItem.page){option.selected=true;}
+    select.appendChild(option);
+  });
+  const isYoutube=item.youtube_id||item.content_type==="youtube";
+  const isArticle=item.content_type==="article"||item.article_body;
+  document.getElementById("editYtRow").style.display=isYoutube?"block":"none";
+  document.getElementById("editArtRow").style.display=isArticle?"block":"none";
+  document.getElementById("editYtUrl").value=item.youtube_url||item.youtube_id||"";
+  document.getElementById("editArtBody").value=item.article_body||"";
+  document.getElementById("editMsg").className="modal-msg";
+  const modal=document.getElementById("editModal");
+  modal.classList.remove("hidden-element");
+  modal.style.display="flex";
+}
+
+function closeModal(){
+  const modal=document.getElementById("editModal");
+  modal.classList.add("hidden-element");
+  modal.style.display="none";
+}
+
+async function saveEdit(){
+  const id=document.getElementById("editId").value;
+  const updates={
+    title:document.getElementById("editTitle").value.trim(),
+    topic:document.getElementById("editTopic").value,
+    description:document.getElementById("editDesc").value.trim(),
+    detail_body:document.getElementById("editDetailBody").value.trim(),
+    author_name:document.getElementById("editAuthorName").value.trim(),
+    speaker_name:document.getElementById("editSpeakerName").value.trim(),
+    location_name:document.getElementById("editLocationName").value.trim(),
+    event_date:document.getElementById("editEventDate").value,
+    duration_text:document.getElementById("editDurationText").value.trim(),
+    tags:document.getElementById("editTags").value.trim(),
+    source_label:document.getElementById("editSourceLabel").value.trim(),
+    external_link:document.getElementById("editExternalLink").value.trim(),
+    publish_status:document.getElementById("editPublishStatus").value,
+    featured:String(document.getElementById("editFeatured").checked),
+    nav_page:window.LMS_ADMIN_NAV.normalizePageKey(document.getElementById("editNavPage").value)
+  };
+  if(!updates.title||!updates.topic){showEditMessage("Title and topic required.","error");return;}
+
+  try{
+    const formData=new FormData();
+    Object.entries(updates).forEach(function(entry){formData.append(entry[0],entry[1]);});
+    if(document.getElementById("editYtRow").style.display!=="none"){
+      const ytValue=document.getElementById("editYtUrl").value.trim();
+      formData.append("content_type","youtube");
+      formData.append("youtube_url",ytValue);
+      formData.append("youtube_id",extractYTId(ytValue));
+    }else if(document.getElementById("editArtRow").style.display!=="none"){
+      formData.append("content_type","article");
+      formData.append("article_body",document.getElementById("editArtBody").value);
+    }else{
+      formData.append("content_type","files");
+    }
+    await window.LMS_API.requestJson("/update-content/"+id,window.LMS_API.formOptions("PUT",formData));
+    closeModal();
+    loadAll();
+  }catch(error){
+    showEditMessage(error.message||"Update failed.","error");
+  }
+}
+
+async function deleteItem(id){
+  if(!confirm("Delete this content?")){return;}
+  try{
+    await window.LMS_API.requestJson("/delete-content/"+id,{method:"DELETE",headers:window.LMS_API.authHeaders()});
+    loadAll();
+  }catch(error){
+    showEditMessage(error.message||"Delete failed.","error");
+  }
+}
+
+function showEditMessage(message,type){
+  const element=document.getElementById("editMsg");
+  element.textContent=message;
+  element.className="modal-msg "+type;
+}
+
+document.getElementById("editModal").addEventListener("click",function(event){if(event.target===this){closeModal();}});
+window.addEventListener("DOMContentLoaded",loadAll);
+window.applyFilters=applyFilters;
+window.setFilter=setFilter;
+window.closeModal=closeModal;
+window.saveEdit=saveEdit;
+})();
+</script>
+</body></html>

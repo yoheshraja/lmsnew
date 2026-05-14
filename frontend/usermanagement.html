@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard | User Management</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/style.css">
+<style>
+.modal.hidden-element{display:none!important}
+.modal-msg{padding:10px 14px;border-radius:6px;font-size:.88rem;font-weight:600;margin-top:10px;display:none}
+.modal-msg.error{background:#ffebee;color:#c62828;border:1px solid #ffcdd2;display:block}
+.modal-msg.success{background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;display:block}
+.status-tag{padding:3px 10px;border-radius:12px;font-size:.75rem;font-weight:700}
+.status-tag.active{background:#e8f5e9;color:#2e7d32}
+</style>
+</head>
+<body>
+<div class="header"><div class="header-content"><div>Admin Dashboard</div>
+  <div class="admin-info"><div class="admin-avatar"><i class="fas fa-user-shield"></i></div>
+  <div class="admin-details"><div class="admin-name" id="adminName">Admin</div><div class="admin-role">Content Manager</div></div></div>
+</div></div>
+<div class="dashboard-container">
+  <div class="sidebar"><ul class="sidebar-menu">
+    <li><a href="/admin/upload" class="menu-item"><i class="fas fa-upload"></i><span>Upload Content</span></a></li>
+    <li><a href="/admin/content-library" class="menu-item"><i class="fas fa-folder-open"></i><span>Content Library</span></a></li>
+    <li><a href="/admin/analytics" class="menu-item"><i class="fas fa-chart-bar"></i><span>Analytics</span></a></li>
+    <li><a href="/admin/user-management" class="menu-item active"><i class="fas fa-users"></i><span>User Management</span></a></li>
+    <li><a href="/admin/settings" class="menu-item"><i class="fas fa-cog"></i><span>Settings</span></a></li>
+  </ul><button class="logout-btn btn btn-outline" onclick="logout()"><i class="fas fa-sign-out-alt"></i><span>Logout</span></button></div>
+  <div class="main-content">
+    <div class="form-container">
+      <div class="form-header">
+        <div class="form-title"><i class="fas fa-users" style="color:var(--primary);margin-right:6px"></i>User Management</div>
+        <button class="btn btn-primary" onclick="openAddUser()"><i class="fas fa-user-plus"></i> Add User</button>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
+        <input type="text" id="userSearch" placeholder="Search users..." oninput="filterUsers()" style="padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:.88rem;width:260px">
+      </div>
+    </div>
+    <div class="data-table-container">
+      <table class="data-table" id="usersTable">
+        <thead><tr><th>User</th><th>Email</th><th>Role</th><th>Joined</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="usersTbody"><tr><td colspan="6" style="text-align:center;padding:30px;color:#999"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<!-- ADD USER MODAL -->
+<div id="addUserModal" class="modal hidden-element">
+  <div class="modal-content" style="max-width:440px">
+    <div class="modal-header"><h3><i class="fas fa-user-plus"></i> Add New User</h3>
+      <span onclick="closeAddUser()" style="cursor:pointer;font-size:1.5rem;line-height:1;color:#999;padding:4px">&times;</span></div>
+    <div class="modal-body">
+      <div class="form-group"><label>Email *</label><input id="newUserEmail" type="email" placeholder="user@example.com"></div>
+      <div class="form-group"><label>Password *</label><input id="newUserPass" type="password" placeholder="Min 6 characters"></div>
+      <div class="form-group"><label>Role *</label><select id="newUserRole"><option value="user">User</option><option value="admin">Admin</option></select></div>
+      <div id="addUserMsg" class="modal-msg"></div>
+      <div class="action-buttons" style="margin-top:16px">
+        <button type="button" class="btn btn-primary" onclick="addUser()"><i class="fas fa-save"></i> Create User</button>
+        <button type="button" class="btn btn-outline" onclick="closeAddUser()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="/config.js"></script>
+<script src="/config.local.js"></script>
+<script src="/static/js/auth.js"></script>
+<script src="/static/js/api.js"></script>
+<script src="/static/js/admin-common.js"></script>
+<script src="/script.js"></script>
+<script>
+(function(){
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+let allUsers=[];
+async function loadUsers(){
+  try{
+    allUsers=await window.LMS_API.requestJson('/get-users',{headers:window.LMS_API.authHeaders()});
+    renderUsers(allUsers);
+  }catch(e){
+    showUM(e.message || 'Failed to load users.','error');
+  }
+}
+function renderUsers(users){
+  const tbody=document.getElementById('usersTbody');tbody.innerHTML='';
+  if(!users||!users.length){tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:30px;color:#aaa">No users found.</td></tr>';return;}
+  users.forEach(u=>{
+    const date=u.created_at?new Date(u.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'—';
+    const tr=document.createElement('tr');
+    tr.innerHTML='<td><div class="row-flex"><div class="user-avatar small"><i class="fas fa-user"></i></div><div><div class="content-title">'+esc(u.email.split('@')[0])+'</div><div class="role-subtext">'+esc(u.role||'user')+'</div></div></div></td>'
+      +'<td>'+esc(u.email)+'</td>'
+      +'<td>'+esc(u.role||'user')+'</td>'
+      +'<td style="font-size:.82rem">'+date+'</td>'
+      +'<td><span class="status-tag active">Active</span></td>'
+      +'<td><div class="content-actions">'
+      +'<button class="action-btn" title="Delete" data-action="delete"><i class="fas fa-trash"></i></button>'
+      +'</div></td>';
+    tr.querySelector('[data-action="delete"]').addEventListener('click',()=>deleteUser(String(u.id),u.email));
+    tbody.appendChild(tr);
+  });
+}
+function filterUsers(){
+  const q=document.getElementById('userSearch').value.toLowerCase();
+  renderUsers(allUsers.filter(u=>(u.email||'').toLowerCase().includes(q)));
+}
+function openAddUser(){
+  document.getElementById('newUserEmail').value='';document.getElementById('newUserPass').value='';document.getElementById('newUserRole').value='user';
+  document.getElementById('addUserMsg').className='modal-msg';
+  const m=document.getElementById('addUserModal');m.classList.remove('hidden-element');m.style.display='flex';
+}
+function closeAddUser(){const m=document.getElementById('addUserModal');m.classList.add('hidden-element');m.style.display='none';}
+async function addUser(){
+  const email=document.getElementById('newUserEmail').value.trim();
+  const pass=document.getElementById('newUserPass').value;
+  const role=document.getElementById('newUserRole').value;
+  if(!email){showUM('Email required.','error');return;}
+  if(pass.length<6){showUM('Password must be at least 6 characters.','error');return;}
+  const fd=new FormData();fd.append('email',email);fd.append('password',pass);fd.append('role',role);
+  try{
+    await window.LMS_API.requestJson('/create-user',window.LMS_API.formOptions('POST',fd));
+    showUM('User created successfully!','success');setTimeout(()=>{closeAddUser();loadUsers();},1200);
+  }catch(e){showUM(e.message||'Connection error.','error');}
+}
+async function deleteUser(id,email){
+  if(!confirm('Delete user "'+email+'"? This cannot be undone.'))return;
+  try{
+    await window.LMS_API.requestJson('/delete-user/'+id,{method:'DELETE',headers:window.LMS_API.authHeaders()});
+    loadUsers();
+  }catch(e){alert(e.message||'Connection error.');}
+}
+function showUM(msg,type){const el=document.getElementById('addUserMsg');el.textContent=msg;el.className='modal-msg '+type;}
+document.getElementById('addUserModal').addEventListener('click',function(e){if(e.target===this)closeAddUser();});
+window.addEventListener('DOMContentLoaded',loadUsers);
+window.filterUsers=filterUsers;
+window.openAddUser=openAddUser;
+window.closeAddUser=closeAddUser;
+window.addUser=addUser;
+
+})();
+</script>
+</body></html>

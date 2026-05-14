@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Auth</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #d4d4d4; }
+        .log { background: #2d2d2d; padding: 10px; margin: 10px 0; border-left: 3px solid #4a9eff; border-radius: 4px; }
+        .error { border-left-color: #f44336; }
+        .success { border-left-color: #4caf50; }
+        button { background: #4a9eff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #357abd; }
+        pre { background: #1e1e1e; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Auth Debug Tool</h1>
+    <div>
+        <button onclick="testLogin()">Test Login</button>
+        <button onclick="testSession()">Test Session</button>
+        <button onclick="testAnalytics()">Test Analytics API</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+        <button onclick="clearSession()">Clear Session</button>
+    </div>
+    <div id="logs"></div>
+
+    <script src="/config.js"></script>
+    <script src="/config.local.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script>
+        function log(message, type) {
+            const div = document.createElement("div");
+            div.className = `log ${type || "info"}`;
+            div.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            document.getElementById("logs").appendChild(div);
+        }
+
+        function clearLogs() {
+            document.getElementById("logs").innerHTML = "";
+        }
+
+        function clearSession() {
+            window.LMS_AUTH.clearSession();
+            log("Session cleared", "success");
+        }
+
+        async function testLogin() {
+            log("Testing admin login...");
+            try {
+                const session = await window.LMS_AUTH.login("admin@yogilms.local", "Admin@123");
+                log(`<pre>${JSON.stringify(session, null, 2)}</pre>`, "success");
+            } catch (error) {
+                log(error.message, "error");
+            }
+        }
+
+        function testSession() {
+            const session = window.LMS_AUTH.getSession();
+            if (!session) {
+                log("No active session", "error");
+                return;
+            }
+
+            log(`<pre>${JSON.stringify(session, null, 2)}</pre>`, "success");
+        }
+
+        async function testAnalytics() {
+            log("Testing /analytics/overview ...");
+            try {
+                const data = await window.LMS_API.requestJson("/analytics/overview", {
+                    headers: window.LMS_API.authHeaders({ "Content-Type": "application/json" })
+                });
+                log(`<pre>${JSON.stringify(data, null, 2)}</pre>`, "success");
+            } catch (error) {
+                log(error.message, "error");
+            }
+        }
+
+        window.addEventListener("load", function () {
+            log("Debug tool loaded");
+            testSession();
+        });
+    </script>
+</body>
+</html>
